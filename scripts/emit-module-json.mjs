@@ -17,14 +17,26 @@ import { fileURLToPath } from "node:url"
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"))
 
-// The range is MEASURED, not asserted: `scripts/verify-build.mjs` builds a real
-// Nuxt site on each supported major and reads the tag out of the emitted HTML.
-// Widening it means running that, not editing this string.
+// 🔑 The compatibility range is DERIVED from `peerDependencies.nuxt`, never
+// written twice. The two would otherwise drift, and they say the same thing to
+// two different audiences: npm resolves the peer range, nuxt.com/modules
+// displays this one. A rule written twice cannot be kept true by testing one
+// of them.
+//
+// The range itself is MEASURED, not asserted: `scripts/verify-build.mjs`
+// builds a real Nuxt site on each supported major and reads the tag out of the
+// emitted HTML. It is deliberately BOUNDED (`^3 || ^4`) rather than the
+// `>=3.0.0` most peers carry — an open-ended range claims compatibility with
+// majors that do not exist yet. Supporting a new one means adding it to
+// VERSIONS in the harness, seeing it go green, and then widening this.
+const nuxtRange = pkg.peerDependencies?.nuxt
+if (!nuxtRange) throw new Error("package.json has no peerDependencies.nuxt to derive compatibility from")
+
 const moduleJson = {
   name: pkg.name,
   version: pkg.version,
   configKey: "pulse",
-  compatibility: { nuxt: ">=3.0.0" },
+  compatibility: { nuxt: nuxtRange },
   docs: "https://github.com/ciphera-net/pulse-nuxt#readme",
 }
 

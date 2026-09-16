@@ -42,7 +42,11 @@ if (existsSync(moduleJsonPath)) {
   const mj = JSON.parse(readFileSync(moduleJsonPath, "utf8"))
   check(mj.name === pkg.name, `dist/module.json name matches package.json`, `${mj.name} vs ${pkg.name}`)
   check(mj.version === pkg.version, `dist/module.json version matches package.json`, `${mj.version} vs ${pkg.version}`)
-  check(typeof mj.compatibility?.nuxt === "string", "dist/module.json declares compatibility.nuxt", JSON.stringify(mj))
+  check(
+    mj.compatibility?.nuxt === pkg.peerDependencies?.nuxt,
+    "dist/module.json compatibility.nuxt IS peerDependencies.nuxt — one range, not two",
+    `${mj.compatibility?.nuxt} vs ${pkg.peerDependencies?.nuxt}`,
+  )
   check(mj.configKey === "pulse", "dist/module.json declares configKey: pulse", JSON.stringify(mj))
 }
 
