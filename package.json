@@ -1,6 +1,6 @@
 {
   "name": "@ciphera-net/pulse-nuxt",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Add Pulse Analytics — privacy-first web analytics — to a Nuxt site with one module. No cookies, no personal data, under 3 KB.",
   "type": "module",
   "license": "Apache-2.0",
@@ -45,8 +45,8 @@
     "nuxt": "^3.0.0 || ^4.0.0"
   },
   "devDependencies": {
+    "@nuxt/kit": "^4.5.2",
     "@nuxt/schema": "^4.5.2",
-    "nuxt": "^4.5.2",
     "playwright-core": "^1.63.0",
     "typescript": "^5.9.2",
     "vitest": "^4.0.18"

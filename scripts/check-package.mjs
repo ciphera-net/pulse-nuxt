@@ -77,20 +77,31 @@ try {
   rmSync(work, { recursive: true, force: true })
 }
 
-// 4. 🔴 `nuxt` must stay in devDependencies, and not for testing.
+// 4. 🔴 `@nuxt/kit` must stay in devDependencies, and it is NOT there to be
+//    imported.
+//
 //    `nuxi module add` decides whether something IS a Nuxt module by reading
 //    the published packument and checking
 //    `Object.assign(pkg.dependencies, pkg.devDependencies)` for `nuxt`,
 //    `nuxt-edge` or `@nuxt/kit` — not the keywords, not dist/module.json
-//    (measured in @nuxt/cli's `add` command, 16-09-2026). This package takes
-//    none of those as a runtime dependency, so `nuxt` in devDependencies is
-//    the ONLY reason `npx nuxi module add @ciphera-net/pulse-nuxt` installs
-//    without warning "It seems that … is not a Nuxt module". Dropping it
-//    breaks the documented install path and nothing else would notice.
+//    (measured in @nuxt/cli's `add` command, 16-09-2026, and confirmed against
+//    @ciphera-net/pulse-astro, which carries none of the three and gets
+//    "It seems that … is not a Nuxt module. Continue anyway? [y/N]").
+//
+//    This package imports its types from `@nuxt/schema`, which is NOT on that
+//    list, and takes none of the three at runtime. So this one line is the only
+//    reason the README's install command is clean, and dropping it in a tidy-up
+//    would break that path with nothing else noticing.
+//
+//    ⚠️ `nuxt` itself is deliberately NOT the marker used here: installing it
+//    makes `npm ci` reject the lockfile outright (`@nuxt/cli` -> `@bomb.sh/tab`
+//    wants cac ^6 and commander ^13-15 while its siblings want cac ^7, and
+//    npm's lockfile writer cannot express it). Isolated with a control on
+//    16-09-2026: `nuxt@4.5.2` alone breaks `npm ci`, `vitest` alone does not.
 const devDeps = pkg.devDependencies ?? {}
 check(
-  "nuxt" in devDeps || "@nuxt/kit" in devDeps,
-  "`nuxt` stays in devDependencies — `nuxi module add` reads it to recognise a module",
+  "@nuxt/kit" in devDeps || "nuxt" in devDeps,
+  "`@nuxt/kit` stays in devDependencies — `nuxi module add` reads it to recognise a module",
   JSON.stringify(Object.keys(devDeps)),
 )
 

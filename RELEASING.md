@@ -311,12 +311,54 @@ pkg.devDependencies)` for `nuxt`, `nuxt-edge` or `@nuxt/kit`.** Not the
 keywords, not `dist/module.json` — measured in `@nuxt/cli`'s `add` command,
 16-09-2026, and confirmed against `@ciphera-net/pulse-astro`, which has none of
 them and gets *"It seems that @ciphera-net/pulse-astro is not a Nuxt module.
-Do you want to continue installing anyway?"*.
+Do you want to continue installing anyway?"* with the prompt defaulted to **No**.
 
-This package takes none of the three as a runtime dependency, so `nuxt` in
-**devDependencies** is the only reason the documented install path is clean.
-Dropping it in a tidy-up would break the README and nothing else would notice,
-so `scripts/check-package.mjs` asserts it.
+This package imports its types from `@nuxt/schema`, which is **not** on that
+list, and takes none of the three at runtime. So `@nuxt/kit` in
+**devDependencies** is the only reason the README's install command is clean.
+Dropping it in a tidy-up would break the documented path and nothing else would
+notice, so `scripts/check-package.mjs` asserts it with the reason written next
+to it.
+
+### 🔴 …and `nuxt` itself cannot be that devDependency
+
+1.0.0 and 1.0.1 used `nuxt` as the marker, and the first CI run on repo 71
+failed on `npm ci`:
+
+```
+npm ci can only install packages when your package.json and package-lock.json are in sync
+  Invalid: lock file's cac@7.0.0 does not satisfy cac@6.7.14
+  Missing: commander@11.1.0 from lock file
+```
+
+A fresh `npm install` produced a lockfile that `npm ci` rejected immediately, so
+it was reproducible locally too. **Isolated with a control**: `nuxt@4.5.2` alone
+breaks `npm ci` under npm 11.6.2, `vitest@4.0.18` alone does not. The cause is
+`@nuxt/cli` → `@bomb.sh/tab`, which wants `cac ^6.7.14` and
+`commander ^13 || ^14 || ^15` while `fast-npm-meta` and `vite-node` want
+`cac ^7`; npm's lockfile writer hoists cac@7 and then `npm ci` reports the
+nested `cac@6.7.14` as missing. An `overrides` entry fixes `cac` and the failure
+simply moves to `commander`. It is an upstream npm/`@nuxt/cli` interaction, not
+something in this package.
+
+`@nuxt/kit` is on the marker list, is a tenth of the tree, and does not have the
+problem — and this package never needed `nuxt` installed anyway: the render
+harness installs its own copy per fixture.
+
+⚠️ The lesson is the cheap one. **Run `npm ci` from a deleted `node_modules`
+before pushing.** `npm install` had been green the whole time; the two commands
+answer different questions.
+
+## Why `NuxtModule` is imported
+
+`src/module.ts` ends with `export default pulseModule satisfies
+NuxtModule<ModuleOptions>`. Without `defineNuxtModule` nothing else would check
+this file against Nuxt's own module contract, and a bare function whose
+signature had quietly drifted would still compile and still publish.
+
+Mutation-tested: swapping the two parameters gives
+`TS1360: Type 'typeof pulseModule' does not satisfy the expected type
+'NuxtModule<ModuleOptions, Partial<ModuleOptions>, false>'`.
 
 ## Release steps
 
@@ -357,6 +399,9 @@ Release by **tagging**, not by a manual trigger.
 
 ## Version history
 
+- **1.0.2** — `nuxt` swapped for `@nuxt/kit` in devDependencies. `nuxt` made
+  `npm ci` reject the lockfile (see above), and `@nuxt/kit` satisfies the same
+  `nuxi module add` marker. No change to the shipped code.
 - **1.0.1** — `dist/module.json`'s compatibility range is now derived from
   `peerDependencies.nuxt` instead of being written a second time. 1.0.0 shipped
   `>=3.0.0` there against a peer range of `^3.0.0 || ^4.0.0`; the two disagreed,

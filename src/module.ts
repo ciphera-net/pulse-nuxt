@@ -1,4 +1,12 @@
-import type { Nuxt } from "@nuxt/schema"
+// Type-only, erased at build. `@nuxt/schema` and `@nuxt/kit` are
+// devDependencies; neither is a runtime dependency and CI asserts there are
+// zero of those. See RELEASING.md § "Why there is no @nuxt/kit dependency" —
+// that is about not calling `defineNuxtModule`, not about importing types.
+//
+// 🔑 `NuxtModule` is imported so TypeScript CHECKS this file against Nuxt's own
+// module contract. Without `defineNuxtModule` nothing else would, and a bare
+// function whose signature had quietly drifted would still compile.
+import type { Nuxt, NuxtModule } from "@nuxt/schema"
 import { buildScripts, resolveDomain, type ModuleOptions, type ScriptDescriptor } from "./pulse.js"
 
 export type { ModuleOptions, CompanionOptions, ScriptDescriptor } from "./pulse.js"
@@ -123,10 +131,15 @@ function log(level: "info" | "warn", message: string): void {
 pulseModule.meta = {
   name: MODULE_NAME,
   configKey: CONFIG_KEY,
+  // ⚠️ Declared for tooling, and NOT a gate. Nuxt does not read this off a
+  // bare function module — proven with a control that declared `^99.0.0` and
+  // built clean. The gate is `nuxtMajor()` above.
   compatibility: { nuxt: ">=3.0.0" },
 }
 
-export default pulseModule
+// The assertion is the point: it fails to compile if the signature stops
+// matching what Nuxt will call.
+export default pulseModule satisfies NuxtModule<ModuleOptions>
 
 // Makes `pulse: { … }` typed inside `defineNuxtConfig`. Written as a literal
 // key rather than `[CONFIG_KEY]` so it reads as what it is in an editor.
