@@ -1,0 +1,60 @@
+{
+  "name": "@ciphera-net/pulse-nuxt",
+  "version": "1.0.0",
+  "description": "Add Pulse Analytics — privacy-first web analytics — to a Nuxt site with one module. No cookies, no personal data, under 3 KB.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "homepage": "https://pulse.ciphera.net",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ciphera-net/pulse-nuxt.git"
+  },
+  "bugs": "https://github.com/ciphera-net/pulse-nuxt/issues",
+  "keywords": [
+    "nuxt",
+    "nuxt-module",
+    "nuxt3",
+    "nuxt4",
+    "analytics",
+    "privacy",
+    "pulse",
+    "gdpr"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/module.d.ts",
+      "default": "./dist/module.js"
+    },
+    "./module.json": "./dist/module.json"
+  },
+  "main": "./dist/module.js",
+  "types": "./dist/module.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node scripts/emit-module-json.mjs",
+    "prepack": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "verify": "node scripts/verify-build.mjs"
+  },
+  "peerDependencies": {
+    "nuxt": "^3.0.0 || ^4.0.0"
+  },
+  "devDependencies": {
+    "@nuxt/schema": "^4.5.2",
+    "nuxt": "^4.5.2",
+    "playwright-core": "^1.63.0",
+    "typescript": "^5.9.2",
+    "vitest": "^4.0.18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

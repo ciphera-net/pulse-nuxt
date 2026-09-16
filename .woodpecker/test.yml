@@ -1,0 +1,48 @@
+# Runs on pull_request AND on push to main.
+#
+# 🔴 `when: event: pull_request` alone is NOT a gate on main. This estate once
+# shipped a repo whose checks only ever ran against proposals, never against the
+# article that actually deployed — green all the way, guarding nothing. Both
+# events, every time.
+when:
+  - event: pull_request
+  - event: push
+    branch: main
+
+labels:
+  runner: k8s
+
+steps:
+  - name: test
+    image: node:22
+    commands:
+      # `npm ci` and not `npm install`: a stale node_modules invents a baseline
+      # that neither CI nor another machine shares.
+      - npm ci
+      - npm run typecheck
+      - npm test
+      # A zero-test run exits 0 on some vitest versions, so the count is
+      # asserted rather than trusted. A FLOOR, not an equality — adding tests
+      # must never redden the build.
+      - |
+        COUNT=$(npx vitest run --reporter=json --outputFile=/tmp/vitest.json >/dev/null 2>&1; \
+                node -e "try{const r=require('/tmp/vitest.json');console.log(r.numTotalTests||0)}catch(e){console.log(0)}")
+        echo "vitest collected $COUNT test(s)"
+        [ "$COUNT" -ge 35 ] || { echo "REFUSING: expected at least 35 tests, collected $COUNT — the suite shrank or stopped being collected"; exit 1; }
+      - npm run build
+      # Zero runtime dependencies, dist/module.json agreeing with package.json,
+      # the exact tarball contents, and `nuxt` still in devDependencies (which
+      # is what makes `nuxi module add` recognise this as a module).
+      #
+      # These live in a committed script rather than inline here because an
+      # inline `node -e` regex in this estate once lost a backslash across
+      # YAML -> sh -> node and died quietly, after passing locally through a
+      # heredoc that quotes differently.
+      - node scripts/check-package.mjs
+
+# ⚠️ What this pipeline deliberately does NOT run: `npm run verify`, the harness
+# that builds a real Nuxt site per major and reads the tag out of the emitted
+# HTML. It installs ~600 packages per fixture and drives a headless Chromium,
+# which is a release gate rather than a per-push one. It is named here so that
+# "CI is green" is never mistaken for "the rendered tag was checked" — run it
+# locally before every release. RELEASING.md step 2.
