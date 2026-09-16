@@ -86,8 +86,8 @@ node scripts/check-listings.mjs
 
 | # | Where | State at capture | Done looks like | If it stalls |
 |---|---|---|---|---|
-| 1 | **npmjs** | ✅ `1.0.1` | n/a | n/a |
-| 2 | **GitHub Packages** | ✅ `1.0.1` | n/a | n/a |
+| 1 | **npmjs** | ✅ `1.0.2` | n/a | n/a |
+| 2 | **GitHub Packages** | ✅ `1.0.2` | n/a | n/a |
 | 3 | **npm search index** | ⏳ not yet indexed | the package answers a name query with its keywords | npm's search index lags the registry by hours. ⚠️ It pages only to 1000 results, so "not in the keyword listing" is never a negative on its own — query by NAME and read the keywords back |
 | 4 | [`nuxt/modules#1618`](https://github.com/nuxt/modules/pull/1618) | OPEN, MERGEABLE/**CLEAN**, all 7 checks green (`ci`, `agentscan`, `autofix`, `check-provenance`, CodeRabbit, 2× Socket) | merged, then `pulse-analytics` appears in `@nuxt/modules`' published `modules.json` and on nuxt.com/modules | Nothing blocks it — purely maintainer attention. ⚠️ It read `BLOCKED` for the first few minutes purely because checks were still pending; that is not `REVIEW_REQUIRED`. Recent comparable PRs (`feat: add @nuxtjs/critters`, `feat: add better-auth`) landed without changes. ⚠️ nuxt.com only updates when they cut a new `@nuxt/modules` release, so merged ≠ visible; row 5 is the one that answers "can a stranger find us" |
 | 5 | **nuxt.com/modules itself** | ⏳ 444 entries, not among them | our card in the **Analytics** category (24 entries today) | follows #1618 plus their next `@nuxt/modules` publish |
@@ -319,6 +319,17 @@ list, and takes none of the three at runtime. So `@nuxt/kit` in
 Dropping it in a tidy-up would break the documented path and nothing else would
 notice, so `scripts/check-package.mjs` asserts it with the reason written next
 to it.
+
+✅ **Verified against the live registry, 16-09-2026**, in a throwaway Nuxt 4.5.2
+app with `@ciphera-net` mapped to npmjs: `npx nuxt module add
+@ciphera-net/pulse-nuxt` installed 1.0.2, wrote the entry into `nuxt.config.ts`
+and printed **no "not a Nuxt module" prompt**. Building that app emitted, from
+the published package:
+
+```html
+<script src="https://js.ciphera.net/script.js" defer data-domain="example.com">
+<script src="https://js.ciphera.net/script.interactions.js" defer>
+```
 
 ### 🔴 …and `nuxt` itself cannot be that devDependency
 
