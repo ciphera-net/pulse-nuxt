@@ -70,25 +70,48 @@ if (process.env.NODE_AUTH_TOKEN) {
 }
 
 // --------------------------------------------------- 3. the npm search index
-// ⚠️ npm search pages only to 1000 results, so "not in the listing" is never a
-// negative on its own. Ask the index for the package BY NAME and read its
-// keywords back — that answers the only question that matters.
+// 🔴 Ask the KEYWORD index, which is the query the ecosystem crawlers actually
+// run — not a text query for the package name.
+//
+// The first version of this row did the latter and reported "not indexed" for
+// all three Pulse packages, including `@ciphera-net/pulse-astro`, which had been
+// verified present the day before. A text query for a scoped name finds
+// `@nuxtjs/plausible` but not a package published hours earlier, so its negative
+// was an artefact of the query, not a fact about the index.
+//
+// ⚠️ npm pages only to 1000 results, so this scans min(total, 1000) and says
+// which — an absence beyond that ceiling would be inconclusive, not negative.
 {
-  const { status, body } = await get(
-    `https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(PKG)}&size=20`,
-  )
-  const hit = status === 200 ? JSON.parse(body).objects.find((o) => o.package.name === PKG) : null
-  const kws = hit?.package?.keywords ?? []
-  // NOT reported as evidence: the query is fuzzy, so `total` counts loose
-  // text matches (22,871 of them) and says nothing about our package.
-  // CONTROL: a package that certainly IS indexed under the keyword. If this
-  // comes back empty the probe is broken, not the answer.
-  const ctl = await get(`https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent("nuxt-gtag")}&size=5`)
-  const ctlOk = ctl.status === 200 && JSON.parse(ctl.body).objects.some((o) => o.package.name === "nuxt-gtag")
+  const kw = "nuxt-module"
+  let from = 0, total = null, found = null, control = false, broke = null
+  while (true) {
+    const res = await fetch(`https://registry.npmjs.org/-/v1/search?text=keywords:${kw}&size=250&from=${from}`)
+    if (!res.ok || !(res.headers.get("content-type") || "").includes("json")) {
+      broke = `HTTP ${res.status}`
+      break
+    }
+    const j = await res.json()
+    total = j.total
+    for (const o of j.objects) {
+      if (o.package.name === PKG) found = o.package.version
+      // CONTROL: a package certainly carrying this keyword, and SCOPED, so it
+      // also proves the query sees scoped names. If the scan ends without it,
+      // the probe is broken and its "no" means nothing.
+      //
+      // ⚠️ The first control here was `nuxt-gtag`, chosen because it was easy to
+      // find by name — but it does not carry `nuxt-module` at all, so the row
+      // went red on a correct answer. A control has to be verified against the
+      // exact query it is controlling, not against a different one.
+      if (o.package.name === "@nuxt/content") control = true
+    }
+    from += 250
+    if (from >= Math.min(total, 1000) || j.objects.length === 0) break
+    await new Promise((r) => setTimeout(r, 1200))
+  }
   row(
-    "npm search index",
-    hit ? (kws.includes("nuxt-module") ? "✅ indexed with nuxt-module" : "⚠️ indexed, keyword missing") : "⏳ not indexed yet",
-    `keywords ${kws.length ? kws.join(",") : "(none read back)"} · control (nuxt-gtag findable): ${ctlOk ? "ok" : "🔴 PROBE BROKEN"}`,
+    "npm keyword index",
+    broke ? `❌ ${broke}` : found ? `✅ indexed as ${found}` : "⏳ not indexed yet",
+    `keywords:${kw} total=${total} scanned=${Math.min(total ?? 0, 1000)} · control (@nuxt/content seen): ${control ? "ok" : "🔴 PROBE BROKEN"}`,
   )
 }
 
