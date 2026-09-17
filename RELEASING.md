@@ -89,11 +89,56 @@ node scripts/check-listings.mjs
 | 1 | **npmjs** | ✅ `1.0.2` | n/a | n/a |
 | 2 | **GitHub Packages** | ✅ `1.0.2` | n/a | n/a |
 | 3 | **npm keyword index** | ✅ `1.0.2` under `keywords:nuxt-module` (818 total, all scanned) | n/a | 🔴 **Query the KEYWORD index, not the package name.** The first version of this row ran a text query for the scoped name and reported "not indexed" for all three Pulse packages — including `@ciphera-net/pulse-astro`, verified present the day before. A text query finds `@nuxtjs/plausible` but not a package published hours earlier, so its negative was an artefact of the query. ⚠️ npm pages only to 1000 results, so an absence beyond that ceiling is inconclusive, not negative |
-| 4 | [`nuxt/modules#1618`](https://github.com/nuxt/modules/pull/1618) | OPEN, MERGEABLE/**CLEAN**, all 7 checks green (`ci`, `agentscan`, `autofix`, `check-provenance`, CodeRabbit, 2× Socket) | merged, then `pulse-analytics` appears in `@nuxt/modules`' published `modules.json` and on nuxt.com/modules | Nothing blocks it — purely maintainer attention. ⚠️ It read `BLOCKED` for the first few minutes purely because checks were still pending; that is not `REVIEW_REQUIRED`. Recent comparable PRs (`feat: add @nuxtjs/critters`, `feat: add better-auth`) landed without changes. ⚠️ nuxt.com only updates when they cut a new `@nuxt/modules` release, so merged ≠ visible; row 5 is the one that answers "can a stranger find us" |
+| 4 | [`nuxt/modules#1618`](https://github.com/nuxt/modules/pull/1618) | 🔴 OPEN, MERGEABLE, 7/7 checks green — **labelled `possible bot`**, and held by it (see below) | merged, then `pulse-analytics` appears in `@nuxt/modules`' published `modules.json` and on nuxt.com/modules | 📍 **An owner action, not maintainer patience — see § "The `possible bot` label" below.** ⚠️ nuxt.com only updates when they cut a new `@nuxt/modules` release, so merged ≠ visible; row 5 is the one that answers "can a stranger find us" |
 | 5 | **nuxt.com/modules itself** | ⏳ 444 entries, not among them | our card in the **Analytics** category (24 entries today) | follows #1618 plus their next `@nuxt/modules` publish |
 | 6 | [`ansidev/awesome-nuxt#403`](https://github.com/ansidev/awesome-nuxt/pull/403) | OPEN, MERGEABLE/**UNSTABLE** | merged into `content/resources/modules.md` → Community | Purely maintainer attention. ⚠️ `UNSTABLE` here is **zero checks reported**, not a failing one — measured: 0 statuses, combined `pending`, and the merged precedent #395 has exactly the same shape |
 | 7 | **`github.com/topics/nuxt-module`** | ✅ topic set | n/a | This IS a listing: `nuxt/awesome` lists no individual modules — its entire Modules section is two links, and this topic is one of them |
 | 8 | **`@nuxt/scripts` stable release** | ⏳ merged, in `2.0.0-beta.8`, NOT in `v1.3.9` | our merge contained in a **stable** `@nuxt/scripts` tag | 🔴 See the correction below. Nothing to chase; the check is the signal |
+
+### 🔴 The `possible bot` label — measured 17-09-2026
+
+`nuxt/modules` runs `.github/workflows/agent-scan.yml`
+(`MatteoGabriele/agentscan-action` v2.5.0). It labelled #1618 `possible bot` 100
+seconds after it opened and posted the AI-contribution policy comment citing
+[Daniel Roe's two principles](https://roe.dev/blog/using-ai-in-open-source).
+
+**This is not the PR waiting its turn.** `#1620` — *"feat: add nuxt-pigeon"*,
+the same two files (`icons/*.svg` + `modules/*.yml`) by an outside contributor —
+opened 17-09 at 12:22:20Z and was **merged by `danielroe` at 12:35:50Z.
+Thirteen minutes.** #1618 had been open 29 hours by then. The label is the only
+visible difference.
+
+🔑 **Know the size of the set.** The label has been applied to exactly **two**
+PRs in the repository's history: ours, and
+[`#1588`](https://github.com/nuxt/modules/pull/1588) *"feat: add
+nuxt-content-mermaid"*. **Zero labelled PRs have ever merged. Zero have ever
+been closed.** #1588 opened **22-08-2026**; its author replied on 04-09 —
+*"Hi! I'm the maintainer of nuxt-content-mermaid, and I submitted this PR by
+myself"* — and has had **no maintainer response in the 13 days since**. So a
+reply asserting human authorship is not, on the evidence, what clears it.
+
+**What the workflow actually does, read rather than guessed:**
+
+- It triggers on **`opened` and `reopened` only**. A rebase or force-push will
+  **not** re-run it, so bringing the branch up to date is free.
+  ⚠️ **But close-and-reopen WOULD re-scan**, and a run classifying `automation`
+  *closes the PR and retitles it* `🚨 unwelcome pr from bot 🚨`. Never reach for
+  reopen as a refresh.
+- We were classified **`mixed`**, not `automation` — deducible from which
+  comment variant we got: the closing one reads *"We're closing this for now as
+  the account looks automated"*, and we got *"If this was flagged in error, we
+  apologise! 😳 Just let us know. 🙏"*, so `shouldClose` was false.
+- **Nothing in the workflow ever removes the label.** Only a human can.
+
+📍 **The owner action.** The escape hatch the bot offers is one sentence —
+*flagged in error* — and our reply (*"the PR was indeed written using AI but all
+the input is mine"*) is honest and does not claim it. Their principle 1 is
+**"never let an LLM speak for you — all comments, issues and PR descriptions
+should be written in your own words"**, so a model-authored PR description is
+the flagged thing itself. The remedy that fits their stated principles is
+**rewriting #1618's description in your own words**, which is a human act and
+not one an assistant can perform on your behalf. Everything technical is already
+green.
 
 ### 🔴 The `@nuxt/scripts` containment check was testing the wrong tag
 
