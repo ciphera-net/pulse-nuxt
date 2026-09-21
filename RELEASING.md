@@ -75,6 +75,16 @@ A checker that has not been shown able to fail has told you nothing. This
 estate lost hours to a JED Checker that returned all-green three times on a
 package with its licence tag deleted.
 
+## 📍 Tracked in Plane as `PULSE-3`
+
+Everything Ciphera-related is a Plane work item (standing owner rule, 20-09-2026). This
+module is **`PULSE-3` — "Ship the Pulse Nuxt module and list it on nuxt.com/modules"**,
+In Progress in cycle W39 Q3, labelled `feature` / `integrations` / `waiting-on-owner`.
+Decisions and measurements go there as comments; this file stays the living artefact and is
+linked from the item. ⚠️ At **Shipped**, attach this markdown to the item — the convention
+wants the snapshot of record at close, and PULSE-3 cannot close while `nuxt/modules#1618`
+is held by the `possible bot` label.
+
 ## 📍 Follow-up tracker — where this module is listed
 
 State captured **16-09-2026**. One command reports all of it, and every probe
