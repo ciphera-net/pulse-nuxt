@@ -7,6 +7,14 @@ Two surfaces, and they are not the same thing:
   **hand-reviewed pull request** against [`nuxt/modules`](https://github.com/nuxt/modules).
   Unlike astro.build there is no crawler: nothing appears because you published.
 
+> 🔴 **13-10-2026: the nuxt.com/modules listing is closed.** `nuxt/modules#1618` was closed without
+> merge by a Nuxt core maintainer: Nuxt Scripts already integrates Pulse Analytics
+> (`scripts.nuxt.com/scripts/pulse-analytics`), so the directory points Nuxt users there rather than
+> listing a module that loads the same script; a module that adds capability on top of Nuxt Scripts
+> would be considered. Decision: accept it. This package stays published on npm and keeps working;
+> rows 4 and 5 below are final, not pending. Once a **stable** `@nuxt/scripts` release carries the
+> Pulse registry entry (row 8), the docs send Nuxt users to `useScriptPulseAnalytics`.
+
 A third surface exists and is **not this package** — `useScriptPulseAnalytics`
 in [`@nuxt/scripts`](https://scripts.nuxt.com). It is tracked below because it
 is the other way a Nuxt user reaches Pulse, and its state gates what our own
@@ -99,8 +107,8 @@ node scripts/check-listings.mjs
 | 1 | **npmjs** | ✅ `1.0.2` | n/a | n/a |
 | 2 | **GitHub Packages** | ✅ `1.0.2` | n/a | n/a |
 | 3 | **npm keyword index** | ✅ `1.0.2` under `keywords:nuxt-module` (818 total, all scanned) | n/a | 🔴 **Query the KEYWORD index, not the package name.** The first version of this row ran a text query for the scoped name and reported "not indexed" for all three Pulse packages — including `@ciphera-net/pulse-astro`, verified present the day before. A text query finds `@nuxtjs/plausible` but not a package published hours earlier, so its negative was an artefact of the query. ⚠️ npm pages only to 1000 results, so an absence beyond that ceiling is inconclusive, not negative |
-| 4 | [`nuxt/modules#1618`](https://github.com/nuxt/modules/pull/1618) | 🔴 OPEN, MERGEABLE, 7/7 checks green — **labelled `possible bot`**, and held by it (see below) | merged, then `pulse-analytics` appears in `@nuxt/modules`' published `modules.json` and on nuxt.com/modules | 📍 **An owner action, not maintainer patience — see § "The `possible bot` label" below.** ⚠️ nuxt.com only updates when they cut a new `@nuxt/modules` release, so merged ≠ visible; row 5 is the one that answers "can a stranger find us" |
-| 5 | **nuxt.com/modules itself** | ⏳ 444 entries, not among them | our card in the **Analytics** category (24 entries today) | follows #1618 plus their next `@nuxt/modules` publish |
+| 4 | [`nuxt/modules#1618`](https://github.com/nuxt/modules/pull/1618) | ⛔ **CLOSED UNMERGED 13-10-2026** (maintainer: Nuxt Scripts already covers it; see the note at the top). Was: OPEN, MERGEABLE, labelled `possible bot` | merged, then `pulse-analytics` appears in `@nuxt/modules`' published `modules.json` and on nuxt.com/modules | 📍 **An owner action, not maintainer patience — see § "The `possible bot` label" below.** ⚠️ nuxt.com only updates when they cut a new `@nuxt/modules` release, so merged ≠ visible; row 5 is the one that answers "can a stranger find us" |
+| 5 | **nuxt.com/modules itself** | ⛔ not listed, by the directory's decision (13-10-2026) | our card in the **Analytics** category (24 entries today) | follows #1618 plus their next `@nuxt/modules` publish |
 | 6 | [`ansidev/awesome-nuxt#403`](https://github.com/ansidev/awesome-nuxt/pull/403) | OPEN, MERGEABLE/**UNSTABLE** | merged into `content/resources/modules.md` → Community | Purely maintainer attention. ⚠️ `UNSTABLE` here is **zero checks reported**, not a failing one — measured: 0 statuses, combined `pending`, and the merged precedent #395 has exactly the same shape |
 | 7 | **`github.com/topics/nuxt-module`** | ✅ topic set | n/a | This IS a listing: `nuxt/awesome` lists no individual modules — its entire Modules section is two links, and this topic is one of them |
 | 8 | **`@nuxt/scripts` stable release** | ⏳ merged, in `2.0.0-beta.8`, NOT in `v1.3.9` | our merge contained in a **stable** `@nuxt/scripts` tag | 🔴 See the correction below. Nothing to chase; the check is the signal |
