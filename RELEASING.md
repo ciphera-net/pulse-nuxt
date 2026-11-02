@@ -104,8 +104,8 @@ node scripts/check-listings.mjs
 
 | # | Where | State at capture | Done looks like | If it stalls |
 |---|---|---|---|---|
-| 1 | **npmjs** | ✅ `1.0.2` | n/a | n/a |
-| 2 | **GitHub Packages** | ✅ `1.0.2` | n/a | n/a |
+| 1 | **npmjs** | ✅ `1.0.3` (02-11-2026) | n/a | n/a |
+| 2 | **GitHub Packages** | 🟡 `1.0.2`: `1.0.3` needs a **classic** token with `write:packages`, and `.env` holds none (the `gh` token and the fine-grained `GITHUB_RELEASE_TOKEN` cannot publish there) | a classic token | n/a |
 | 3 | **npm keyword index** | ✅ `1.0.2` under `keywords:nuxt-module` (818 total, all scanned) | n/a | 🔴 **Query the KEYWORD index, not the package name.** The first version of this row ran a text query for the scoped name and reported "not indexed" for all three Pulse packages — including `@ciphera-net/pulse-astro`, verified present the day before. A text query finds `@nuxtjs/plausible` but not a package published hours earlier, so its negative was an artefact of the query. ⚠️ npm pages only to 1000 results, so an absence beyond that ceiling is inconclusive, not negative |
 | 4 | [`nuxt/modules#1618`](https://github.com/nuxt/modules/pull/1618) | ⛔ **CLOSED UNMERGED 13-10-2026** (maintainer: Nuxt Scripts already covers it; see the note at the top). Was: OPEN, MERGEABLE, labelled `possible bot` | merged, then `pulse-analytics` appears in `@nuxt/modules`' published `modules.json` and on nuxt.com/modules | 📍 **An owner action, not maintainer patience — see § "The `possible bot` label" below.** ⚠️ nuxt.com only updates when they cut a new `@nuxt/modules` release, so merged ≠ visible; row 5 is the one that answers "can a stranger find us" |
 | 5 | **nuxt.com/modules itself** | ⛔ not listed, by the directory's decision (13-10-2026) | our card in the **Analytics** category (24 entries today) | follows #1618 plus their next `@nuxt/modules` publish |
@@ -239,15 +239,16 @@ bare `npm publish` goes to the WRONG registry.** Always pass `--registry` and an
 explicit `--userconfig`.
 
 🔑 **Use `CIPHERA_SCOPE_NPMJS_TOKEN`.** `.env` holds three npm tokens and only
-that one can write to this scope; `NPMJS_TOKEN` is older and narrower and
-cannot even read the org. `npm whoami` succeeds for all of them and proves
-nothing. The one call that separates them, **run it first**:
+that one can write to this scope; `NPMJS_TOKEN` is older and narrower, and
+since 02-11-2026 it does not authenticate at all (`npm whoami` answers 401).
+`npm whoami` succeeding never proved a token could publish here. The one call
+that separates them, **run it first**:
 
 ```bash
 curl -s -o /dev/null -w '%{http_code}\n' \
   -H "Authorization: Bearer $TOKEN" \
   https://registry.npmjs.org/-/org/ciphera-net/user
-# 200 = CIPHERA_SCOPE_NPMJS_TOKEN   403 = the narrow one
+# 200 = CIPHERA_SCOPE_NPMJS_TOKEN   401 or 403 = a token that cannot publish here
 ```
 
 ```bash
@@ -473,6 +474,8 @@ Release by **tagging**, not by a manual trigger.
 
 ## Version history
 
+- **1.0.3** — the package description says Pulse stores no IP addresses instead
+  of "no personal data". No change to the shipped code.
 - **1.0.2** — `nuxt` swapped for `@nuxt/kit` in devDependencies. `nuxt` made
   `npm ci` reject the lockfile (see above), and `@nuxt/kit` satisfies the same
   `nuxi module add` marker. No change to the shipped code.
