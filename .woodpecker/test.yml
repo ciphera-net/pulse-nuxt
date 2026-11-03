@@ -14,7 +14,7 @@ labels:
 
 steps:
   - name: test
-    image: node:22
+    image: registry.ops.ciphera.net/mirror/docker.io/library/node:22-94c973596a85@sha256:94c973596a8581a87ba42746ceb0b0e0b5246d098de45b1ce04dcc967cfc5dfb
     commands:
       # `npm ci` and not `npm install`: a stale node_modules invents a baseline
       # that neither CI nor another machine shares.
