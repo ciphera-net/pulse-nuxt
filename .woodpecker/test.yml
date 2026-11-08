@@ -20,13 +20,13 @@ steps:
       # that neither CI nor another machine shares.
       - npm ci
       - npm run typecheck
-      - npm test
-      # A zero-test run exits 0 on some vitest versions, so the count is
+      - npm test -- --reporter=default --reporter=json --outputFile.json=/tmp/vitest.json
+      # One run writes the log and a JSON report (until 08-11-2026 the suite ran a second
+      # time only to be counted). A zero-test run exits 0 on some vitest versions, so the count is
       # asserted rather than trusted. A FLOOR, not an equality — adding tests
       # must never redden the build.
       - |
-        COUNT=$(npx vitest run --reporter=json --outputFile=/tmp/vitest.json >/dev/null 2>&1; \
-                node -e "try{const r=require('/tmp/vitest.json');console.log(r.numTotalTests||0)}catch(e){console.log(0)}")
+        COUNT=$(node -e "try{const r=require('/tmp/vitest.json');console.log(r.numTotalTests||0)}catch(e){console.log(0)}")
         echo "vitest collected $COUNT test(s)"
         [ "$COUNT" -ge 35 ] || { echo "REFUSING: expected at least 35 tests, collected $COUNT — the suite shrank or stopped being collected"; exit 1; }
       - npm run build
