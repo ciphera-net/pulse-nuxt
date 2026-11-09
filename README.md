@@ -1,7 +1,8 @@
 # Pulse Analytics for Nuxt
 
-Privacy-first analytics for a Nuxt site, in one module. No cookies, no personal
-data, and the script it adds to your pages is under 3 KB.
+This module adds privacy-first analytics to a Nuxt site. Pulse Analytics
+sets no cookies and never stores IP addresses, and the script it adds to your
+pages is under 3 KB.
 
 [Pulse Analytics](https://pulse.ciphera.net) is built by [Ciphera](https://ciphera.net), a
 company in Belgium, and hosted in Europe.
@@ -12,7 +13,7 @@ company in Belgium, and hosted in Europe.
 npx nuxi module add @ciphera-net/pulse-nuxt
 ```
 
-Or by hand:
+You can also set it up by hand:
 
 ```bash
 npm install -D @ciphera-net/pulse-nuxt
@@ -27,7 +28,7 @@ export default defineNuxtConfig({
 ```
 
 That is the whole setup. `domain` is the hostname your site is registered under
-in Pulse — if a site-config module (`@nuxtjs/sitemap`, `@nuxtjs/robots`,
+in Pulse. If a site-config module (`@nuxtjs/sitemap`, `@nuxtjs/robots`,
 `@nuxtjs/seo`) already gives you a `site.url`, you can leave it out and the
 module reads the hostname from there.
 
@@ -39,12 +40,12 @@ The free plan is enough to start.
 | Option | Default | What it does |
 |---|---|---|
 | `domain` | from `site.url` | The domain your site is registered under in Pulse Analytics. Pass this when `site.url` is not the domain you track, for example on a preview deployment. |
-| `apiUrl` | — | Route events through your own proxy origin. A bare origin (`https://example.com`), not a full URL: the tracker appends its own path. |
+| `apiUrl` | unset | Route events through your own proxy origin. Enter the origin only (`https://example.com`), without a path, because the tracker adds its own. |
 | `trackScroll` | `true` | Record scroll depth. |
 | `trackOutbound` | `true` | Record outbound link clicks as `outbound_link` events. |
 | `trackDownloads` | `true` | Record file download clicks as `file_download` events. |
-| `companion` | `false` | Also record clicks, copies and form submits. A second, separate script — see below. `true` records all three; an object turns individual ones off. |
-| `injectInDev` | `false` | Inject during `nuxt dev` too. Off by default — see below. |
+| `companion` | `false` | Also record clicks, copies and form submits. This loads a second, separate script (see below). `true` records all three; an object turns individual ones off. |
+| `injectInDev` | `false` | Inject during `nuxt dev` too. This is off by default (see below). |
 
 ```ts
 pulse: {
@@ -58,7 +59,8 @@ pulse: {
 
 **It does not run in `nuxt dev`.** The tracker has no localhost guard, so a dev
 server would send real pageviews at your production dashboard. The module prints
-a line saying it stayed out. Set `injectInDev: true` if you actually want it.
+a line saying it stayed out. Set `injectInDev: true` if you want the tracker to
+run in dev.
 
 **The interaction capture is a second request on purpose.** The core script's
 size is a published claim, and nothing gets folded into it to make a feature
@@ -81,27 +83,28 @@ way is a copy and paste.
 
 Take this module when you want the tag and nothing else; take `@nuxt/scripts`
 when you want the tag *and* a way to fire events from your components. Do not
-install both — they would each add a tag, and the pageviews would double.
+install both, because they would each add a tag and the pageviews would double.
 
 ## What Pulse Analytics measures
 
-Pageviews, referrers, countries, devices, time on page and scroll depth, plus
-goals, funnels and campaigns. It sets no cookies and never stores IP addresses.
-Visitors whose browser sends Do Not Track or Global Privacy Control are not
-counted at all — so if you test in Brave or Firefox and see nothing, that is the
-tracker behaving correctly. Safari is the easiest browser to verify an install in.
+Pulse Analytics measures pageviews, referrers, countries, devices, time on page
+and scroll depth, plus goals, funnels and campaigns.
+It sets no cookies and never stores IP addresses. Visitors whose browser sends
+Do Not Track or Global Privacy Control are not counted, so if you test in Brave
+or Firefox and see nothing, the tracker is behaving correctly. Safari is the
+easiest browser to verify an install in.
 
 ## Compatibility
 
-Nuxt 3 and Nuxt 4. The range is measured, not asserted: `npm run verify` builds
-a real Nuxt site on each major and reads the tag out of the emitted HTML.
-Nuxt 2 is refused with an error — its head is Vue Meta and a different shape
-entirely.
+The module supports Nuxt 3 and Nuxt 4. The range is measured: `npm run verify`
+builds a real Nuxt site on each major and reads the tag out of the emitted HTML.
+The module refuses Nuxt 2 with an error. Its head is Vue Meta, which has a
+different shape.
 
 ## Licence
 
-Copyright 2026 Ciphera BV. Licensed under the Apache License, Version 2.0 —
-the `LICENSE` file is the licence text verbatim, so the copyright line lives
+Copyright 2026 Ciphera BV. Licensed under the Apache License, Version 2.0.
+The `LICENSE` file is the licence text verbatim, so the copyright line lives
 here rather than inside it.
 
 This package has **zero runtime dependencies**, asserted in CI.
