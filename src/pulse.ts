@@ -11,13 +11,17 @@
 // ships no code of its own to the browser. Measured, not assumed — see
 // RELEASING.md § "Compatibility is measured, not assumed".
 //
-// The option names deliberately match the `pulse-analytics` entry in
-// `@nuxt/scripts` (`domain`, `apiUrl`, `trackScroll`, `trackOutbound`,
-// `trackDownloads`). A Nuxt user can meet both, and two Pulse surfaces on one
-// framework disagreeing about what an option is called is a support ticket
-// waiting to happen.
+// The `domain` and `apiUrl` option names deliberately match the
+// `pulse-analytics` entry in `@nuxt/scripts`. A Nuxt user can meet both, and
+// two Pulse surfaces on one framework disagreeing about what an option is
+// called is a support ticket waiting to happen. Scroll depth, outbound links,
+// downloads and interactions are set in the site's settings in Pulse, and the
+// module emits one tag only.
 
 export const SCRIPT_URL = "https://js.ciphera.net/script.js"
+/** @deprecated The module no longer loads this script; the core script does
+ *  when the site's settings in Pulse switch it on. Kept so the public exports
+ *  do not change. */
 export const COMPANION_URL = "https://js.ciphera.net/script.interactions.js"
 
 /** A registrable hostname: labels of letters, digits and hyphens, at least one
@@ -55,8 +59,8 @@ export function hostnameFromSite(site: string | URL | undefined | null): string 
   }
 }
 
-/** Which interactions the companion script records. Every one defaults to on;
- *  the tracker reads them as `data-no-*` presence flags. */
+/** @deprecated Ignored since 1.1.0. Switch clicks, copies and form submits in
+ *  your site's settings in Pulse (Settings > General). */
 export interface CompanionOptions {
   /** Record clicks on buttons and links as `click` events. */
   clicks?: boolean
@@ -75,16 +79,17 @@ export interface ModuleOptions {
   /** Route events through your own proxy origin. A bare origin
    *  (`https://example.com`), not a full URL: the tracker appends its own path. */
   apiUrl?: string
-  /** Record scroll depth. Default `true`. */
+  /** @deprecated Ignored since 1.1.0. Switch scroll depth in your site's
+   *  settings in Pulse (Settings > General). */
   trackScroll?: boolean
-  /** Record outbound link clicks as `outbound_link` events. Default `true`. */
+  /** @deprecated Ignored since 1.1.0. Switch outbound links in your site's
+   *  settings in Pulse (Settings > General). */
   trackOutbound?: boolean
-  /** Record file download clicks as `file_download` events. Default `true`. */
+  /** @deprecated Ignored since 1.1.0. Switch file downloads in your site's
+   *  settings in Pulse (Settings > General). */
   trackDownloads?: boolean
-  /** Also load the companion script, which records clicks, copies and form
-   *  submits. A SECOND request on purpose: the core script's size is a
-   *  published claim and nothing may be folded into it. `true` records all
-   *  three; an object turns individual ones off. */
+  /** @deprecated Ignored since 1.1.0. Switch clicks, copies and form submits
+   *  in your site's settings in Pulse (Settings > General). */
   companion?: boolean | CompanionOptions
   /** Inject during `nuxt dev` as well. Off by default: the tracker has no
    *  localhost guard, so a dev server would send real pageviews at production. */
@@ -126,21 +131,19 @@ export function resolveDomain(
  *  without one, and the shape is a plain attribute bag either way. */
 export type ScriptDescriptor = Record<string, string | boolean | undefined>
 
-/** 🔴 A presence flag must be `''` or absent, NEVER a boolean.
- *
- *  Unhead normalises a `data-*` prop to a string before rendering, and its
- *  emptiness guard tests the boolean `false`, not the string `"false"`. So
- *  `'data-no-scroll': false` ships as `data-no-scroll="false"` — an attribute
- *  that is PRESENT. The tracker reads these with `hasAttribute()`, so a
- *  boolean `false` would switch the feature it names OFF: the exact inversion
- *  of what the option asked for. Measured on Unhead 3.4, and the reason this
- *  helper exists instead of a ternary at each call site. */
-function flag(disabled: boolean): "" | undefined {
-  return disabled ? "" : undefined
+/** The deprecated options that were set, in a fixed order. They are ignored
+ *  since 1.1.0; the module logs one line for each. */
+export function ignoredOptions(options: ModuleOptions): string[] {
+  const names = ["trackScroll", "trackOutbound", "trackDownloads", "companion"] as const
+  return names.filter((name) => options[name] !== undefined)
 }
 
-/** Normalise `companion` into the three booleans the second script needs, or
- *  null when there is to be no second script. */
+/** @deprecated Since 1.1.0 nothing in this module uses it: the core script
+ *  loads the interactions script by itself when the site's settings in Pulse
+ *  switch it on. It stays exported, unchanged, so code that imported it keeps
+ *  building in a minor release.
+ *
+ *  Normalises `companion` into three booleans, or null when it is not set. */
 export function resolveCompanion(
   companion: ModuleOptions["companion"],
 ): { clicks: boolean; copy: boolean; forms: boolean } | null {
@@ -153,11 +156,10 @@ export function resolveCompanion(
   }
 }
 
-/** The script descriptors to append to `app.head.script`, in order.
- *
- *  The core script is always first. The companion, when asked for, is a second
- *  entry and never carries `data-domain` — it reads `window.pulse`, which the
- *  core script owns.
+/** The script descriptors to append to `app.head.script`: the core script only.
+ *  The core script loads the interactions script by itself when the site's
+ *  settings in Pulse switch it on, so this module never emits a second tag and
+ *  never writes a `data-no-*` or `data-ignore-*` attribute.
  *
  *  ⚠️ `defer` is a boolean here and Unhead renders it as a BARE `defer`
  *  attribute, which is what we want. It is spelled as a boolean rather than
@@ -169,28 +171,12 @@ export function buildScripts(domain: string | null, options: ModuleOptions = {})
     throw new Error(`[pulse] refusing to inject an invalid domain: ${domain}`)
   }
 
-  const core: ScriptDescriptor = {
-    src: SCRIPT_URL,
-    defer: true,
-    "data-domain": domain ?? undefined,
-    "data-api": options.apiUrl ? String(options.apiUrl).replace(/\/+$/, "") : undefined,
-    "data-no-scroll": flag(options.trackScroll === false),
-    "data-no-outbound": flag(options.trackOutbound === false),
-    "data-no-downloads": flag(options.trackDownloads === false),
-  }
-
-  const scripts: ScriptDescriptor[] = [core]
-
-  const companion = resolveCompanion(options.companion)
-  if (companion) {
-    scripts.push({
-      src: COMPANION_URL,
+  return [
+    {
+      src: SCRIPT_URL,
       defer: true,
-      "data-no-clicks": flag(!companion.clicks),
-      "data-no-copy": flag(!companion.copy),
-      "data-no-forms": flag(!companion.forms),
-    })
-  }
-
-  return scripts
+      "data-domain": domain ?? undefined,
+      "data-api": options.apiUrl ? String(options.apiUrl).replace(/\/+$/, "") : undefined,
+    },
+  ]
 }

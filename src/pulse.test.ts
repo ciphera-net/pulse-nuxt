@@ -6,8 +6,9 @@ import {
   isValidDomain,
   hostnameFromSite,
   resolveDomain,
-  resolveCompanion,
+  ignoredOptions,
   buildScripts,
+  type ModuleOptions,
 } from "./pulse.js"
 
 describe("normalizeDomain", () => {
@@ -90,19 +91,13 @@ describe("resolveDomain", () => {
   })
 })
 
-describe("resolveCompanion", () => {
-  it("is null unless asked for — the second request is never implicit", () => {
-    expect(resolveCompanion(undefined)).toBeNull()
-    expect(resolveCompanion(false)).toBeNull()
+describe("ignoredOptions", () => {
+  it("is empty when no deprecated option is set", () => {
+    expect(ignoredOptions({ domain: "example.com", apiUrl: "https://p.example.com" })).toEqual([])
   })
 
-  it("records all three by default", () => {
-    expect(resolveCompanion(true)).toEqual({ clicks: true, copy: true, forms: true })
-    expect(resolveCompanion({})).toEqual({ clicks: true, copy: true, forms: true })
-  })
-
-  it("turns off only what is explicitly false", () => {
-    expect(resolveCompanion({ copy: false })).toEqual({ clicks: true, copy: false, forms: true })
+  it("names each deprecated option that is set, even when it is false", () => {
+    expect(ignoredOptions({ trackScroll: false, companion: true })).toEqual(["trackScroll", "companion"])
   })
 })
 
@@ -137,67 +132,34 @@ describe("buildScripts", () => {
     expect(core!["data-api"]).toBeUndefined()
   })
 
-  // 🔴 The whole reason `flag()` exists. Unhead stringifies a `data-*` prop
-  // before its emptiness guard runs, and that guard tests the boolean `false`,
-  // not the string "false" — so `'data-no-scroll': false` ships as
-  // `data-no-scroll="false"`, an attribute that is PRESENT. The tracker reads
-  // these with hasAttribute(), so a boolean would invert every one of them.
-  describe("the data-no-* flags are presence flags, never booleans", () => {
-    it("emits nothing at all when the feature is on", () => {
-      const [core] = buildScripts("example.com", {
-        trackScroll: true,
-        trackOutbound: true,
-        trackDownloads: true,
-      })
-      for (const key of ["data-no-scroll", "data-no-outbound", "data-no-downloads"]) {
-        expect(core![key], key).toBeUndefined()
+  describe("the deprecated options", () => {
+    const all: ModuleOptions = {
+      trackScroll: false,
+      trackOutbound: false,
+      trackDownloads: false,
+      companion: { copy: false },
+    }
+
+    it("are ignored: the build still emits exactly one script", () => {
+      const scripts = buildScripts("example.com", all)
+      expect(scripts).toHaveLength(1)
+      expect(scripts[0]!.src).toBe(SCRIPT_URL)
+      expect(scripts[0]!["data-domain"]).toBe("example.com")
+    })
+
+    it("never write a data-no-* or data-ignore-* attribute, and never the interactions script", () => {
+      for (const options of [all, { companion: true }, {}]) {
+        const scripts = buildScripts("example.com", options)
+        for (const script of scripts) {
+          expect(script.src).not.toBe(COMPANION_URL)
+          for (const key of Object.keys(script)) expect(key).not.toMatch(/^data-(no|ignore)-/)
+        }
       }
     })
 
-    it("emits an EMPTY STRING — not `true`, not `false` — when the feature is off", () => {
-      const [core] = buildScripts("example.com", {
-        trackScroll: false,
-        trackOutbound: false,
-        trackDownloads: false,
-      })
-      for (const key of ["data-no-scroll", "data-no-outbound", "data-no-downloads"]) {
-        expect(core![key], key).toBe("")
-        expect(typeof core![key], key).toBe("string")
-      }
-    })
-
-    it("treats an omitted flag as on, like the tracker's own default", () => {
-      const [core] = buildScripts("example.com", {})
-      expect(core!["data-no-scroll"]).toBeUndefined()
-    })
-  })
-
-  describe("the companion", () => {
-    it("is a SECOND entry, after the core, and never carries data-domain", () => {
-      const [core, companion, ...rest] = buildScripts("example.com", { companion: true })
-      expect(rest).toHaveLength(0)
-      expect(core!.src).toBe(SCRIPT_URL)
-      expect(companion!.src).toBe(COMPANION_URL)
-      expect(companion!["data-domain"]).toBeUndefined()
-      expect(companion!.defer).toBe(true)
-    })
-
-    it("carries no data-no-* flags when everything is recorded", () => {
-      const [, companion] = buildScripts("example.com", { companion: true })
-      for (const key of ["data-no-clicks", "data-no-copy", "data-no-forms"]) {
-        expect(companion![key], key).toBeUndefined()
-      }
-    })
-
-    it("turns off exactly what was asked for, as presence flags", () => {
-      const [, companion] = buildScripts("example.com", { companion: { copy: false } })
-      expect(companion!["data-no-copy"]).toBe("")
-      expect(companion!["data-no-clicks"]).toBeUndefined()
-      expect(companion!["data-no-forms"]).toBeUndefined()
-    })
-
-    it("is absent for `false`, so turning it off cannot leave a stray request", () => {
-      expect(buildScripts("example.com", { companion: false })).toHaveLength(1)
+    it("leave data-api alone", () => {
+      const [core] = buildScripts("example.com", { ...all, apiUrl: "https://proxy.example.com/" })
+      expect(core!["data-api"]).toBe("https://proxy.example.com")
     })
   })
 })

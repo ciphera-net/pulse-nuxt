@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import type { Nuxt } from "@nuxt/schema"
 import pulseModule from "./module.js"
-import { SCRIPT_URL, COMPANION_URL, type ModuleOptions } from "./pulse.js"
+import { SCRIPT_URL, type ModuleOptions } from "./pulse.js"
 
 /** The smallest thing the module can be handed that still answers every
  *  question it asks: a head to push into, a dev flag, a version, and the
@@ -63,10 +63,23 @@ describe("the module function", () => {
   })
 
   it("reads the `pulse` config key", () => {
-    const nuxt = fakeNuxt({ pulse: { domain: "fromconfig.com", companion: true } })
+    const nuxt = fakeNuxt({ pulse: { domain: "fromconfig.com" } })
     pulseModule(undefined, nuxt)
-    expect(headScripts(nuxt).map((s) => s.src)).toEqual([SCRIPT_URL, COMPANION_URL])
+    expect(headScripts(nuxt).map((s) => s.src)).toEqual([SCRIPT_URL])
     expect(headScripts(nuxt)[0]!["data-domain"]).toBe("fromconfig.com")
+  })
+
+  it("ignores the deprecated options, logs one line for each, and still adds one tag", () => {
+    const nuxt = fakeNuxt({ pulse: { domain: "example.com", companion: true, trackScroll: false } })
+    pulseModule(undefined, nuxt)
+    expect(headScripts(nuxt).map((s) => s.src)).toEqual([SCRIPT_URL])
+    expect(warn).toHaveBeenCalledWith(
+      "[pulse] The companion option has been ignored since 1.1.0: switch it in your site's settings in Pulse.",
+    )
+    expect(warn).toHaveBeenCalledWith(
+      "[pulse] The trackScroll option has been ignored since 1.1.0: switch it in your site's settings in Pulse.",
+    )
+    expect(Object.keys(headScripts(nuxt)[0]!).some((k) => /^data-(no|ignore)-/.test(k))).toBe(false)
   })
 
   it("lets inline options — `modules: [['…', { … }]]` — win over the config key", () => {

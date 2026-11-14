@@ -2,7 +2,7 @@
 
 This module adds privacy-first analytics to a Nuxt site. Pulse Analytics
 sets no cookies and never stores IP addresses, and the script it adds to your
-pages is under 3 KB.
+pages is about 3 KB.
 
 [Pulse Analytics](https://pulse.ciphera.net) is built by [Ciphera](https://ciphera.net), a
 company in Belgium, and hosted in Switzerland.
@@ -41,19 +41,14 @@ The free plan is enough to start.
 |---|---|---|
 | `domain` | from `site.url` | The domain your site is registered under in Pulse Analytics. Pass this when `site.url` is not the domain you track, for example on a preview deployment. |
 | `apiUrl` | unset | Route events through your own proxy origin. Enter the origin only (`https://example.com`), without a path, because the tracker adds its own. |
-| `trackScroll` | `true` | Record scroll depth. |
-| `trackOutbound` | `true` | Record outbound link clicks as `outbound_link` events. |
-| `trackDownloads` | `true` | Record file download clicks as `file_download` events. |
-| `companion` | `false` | Also record clicks, copies and form submits. This loads a second, separate script (see below). `true` records all three; an object turns individual ones off. |
 | `injectInDev` | `false` | Inject during `nuxt dev` too. This is off by default (see below). |
 
-```ts
-pulse: {
-  domain: "example.com",
-  companion: { copy: false },
-  trackScroll: false,
-}
-```
+Scroll depth, outbound links, file downloads, and clicks, copies and form submits
+are each switched on or off in your site's settings in Pulse (Settings → General).
+The tag stays the same, so there is nothing to change here.
+
+`trackScroll`, `trackOutbound`, `trackDownloads` and `companion` are deprecated
+and have been ignored since 1.1.0. The module logs one line for each one that is still set.
 
 ## Three things worth knowing
 
@@ -62,9 +57,10 @@ server would send real pageviews at your production dashboard. The module prints
 a line saying it stayed out. Set `injectInDev: true` if you want the tracker to
 run in dev.
 
-**The interaction capture is a second request on purpose.** The core script's
-size is a published claim, and nothing gets folded into it to make a feature
-look free. `companion: true` costs you a second, separate file.
+**A script served from your own origin needs the interactions script beside
+it.** The core script loads the interactions script from the same origin it was
+served from. If you serve the core script yourself, for example when Nuxt
+Scripts bundles it, put `script.interactions.js` next to it.
 
 **View-source shows the tag itself.** Unlike the Astro and Framer integrations,
 this module adds a real `<script src>` to `app.head`, so the tag Nuxt renders is
@@ -77,9 +73,10 @@ forbids inline script.
 Then you may not need this module. Pulse is a first-party entry in the
 [Nuxt Scripts registry](https://scripts.nuxt.com) as `useScriptPulseAnalytics`,
 which gives you loading triggers, consent gating and a typed `track()` you can
-call from a component. The option names here (`domain`, `apiUrl`, `trackScroll`,
-`trackOutbound`, `trackDownloads`) are deliberately the same, so moving either
-way is a copy and paste.
+call from a component. The `domain` and `apiUrl` option names here are
+deliberately the same, so moving either way is a copy and paste. Since version
+1.9.0 of the tracking script, your site's settings in Pulse decide scroll depth,
+outbound links and downloads, so neither surface needs an option for them.
 
 Take this module when you want the tag and nothing else; take `@nuxt/scripts`
 when you want the tag *and* a way to fire events from your components. Do not
