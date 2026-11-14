@@ -480,6 +480,10 @@ Release by **tagging**, not by a manual trigger.
 
 ## Version history
 
+- **1.1.0**: the module emits one tag. `trackScroll`, `trackOutbound`,
+  `trackDownloads` and `companion` stay in the option types, marked
+  deprecated, and are ignored with one log line each; the site's settings in
+  Pulse decide now. The size reads about 3 KB.
 - **1.0.3** — the package description says Pulse stores no IP addresses instead
   of "no personal data". No change to the shipped code.
 - **1.0.2** — `nuxt` swapped for `@nuxt/kit` in devDependencies. `nuxt` made

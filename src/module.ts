@@ -7,7 +7,7 @@
 // module contract. Without `defineNuxtModule` nothing else would, and a bare
 // function whose signature had quietly drifted would still compile.
 import type { Nuxt, NuxtModule } from "@nuxt/schema"
-import { buildScripts, resolveDomain, type ModuleOptions, type ScriptDescriptor } from "./pulse.js"
+import { buildScripts, ignoredOptions, resolveDomain, type ModuleOptions, type ScriptDescriptor } from "./pulse.js"
 
 export type { ModuleOptions, CompanionOptions, ScriptDescriptor } from "./pulse.js"
 export {
@@ -17,6 +17,7 @@ export {
   normalizeDomain,
   isValidDomain,
   hostnameFromSite,
+  ignoredOptions,
   resolveCompanion,
   resolveDomain,
 } from "./pulse.js"
@@ -45,7 +46,7 @@ interface SiteConfigured {
  * 🔑 This is a plain module function rather than a `defineNuxtModule()` call,
  * and that is a deliberate, measured choice — see RELEASING.md § "Why there is
  * no @nuxt/kit dependency". The short version: everything this module does is
- * push two objects into `nuxt.options.app.head.script`, `defineNuxtModule` is
+ * push one object into `nuxt.options.app.head.script`, `defineNuxtModule` is
  * sugar around that, and taking `@nuxt/kit` costs a runtime dependency plus a
  * version range that peers have already got wrong. The one thing the sugar
  * would buy — the compatibility gate — is done explicitly below, because Nuxt
@@ -64,6 +65,12 @@ function pulseModule(inlineOptions: ModuleOptions | undefined, nuxt: Nuxt): void
     throw new Error(
       `[pulse] ${MODULE_NAME} requires Nuxt ${MIN_MAJOR} or newer; this project is running Nuxt ${major}.`,
     )
+  }
+
+  // These options were read until 1.1.0. The site's settings in Pulse decide
+  // now, so say so once for each one that is still set.
+  for (const name of ignoredOptions(options)) {
+    log("warn", `The ${name} option has been ignored since 1.1.0: switch it in your site's settings in Pulse.`)
   }
 
   // The tracker has no localhost guard, so a dev server would send real
@@ -96,8 +103,7 @@ function pulseModule(inlineOptions: ModuleOptions | undefined, nuxt: Nuxt): void
     )
   } else {
     const from = source === "option" ? "the `domain` option" : "`site.url`"
-    const extra = options.companion ? ", with interaction capture" : ""
-    log("info", `tracking ${domain} (from ${from})${extra}`)
+    log("info", `tracking ${domain} (from ${from})`)
   }
 }
 

@@ -40,7 +40,6 @@ const WORK = join(ROOT, "scripts/.work")
 const VERSIONS = ["3.21.11", "4.5.2"]
 
 const SCRIPT_URL = "https://js.ciphera.net/script.js"
-const COMPANION_URL = "https://js.ciphera.net/script.interactions.js"
 
 const args = process.argv.slice(2)
 const keep = args.includes("--keep")
@@ -83,45 +82,26 @@ const FIXTURES = [
     config: `pulse: { domain: "example.com", companion: { copy: false }, trackScroll: false }`,
     assert(html) {
       const tags = ourTags(html)
-      check(tags.length === 2, "two Pulse tags: the core script and the companion", JSON.stringify(tags))
-      const [core = "", companion = ""] = tags
+      check(tags.length === 1, "one Pulse tag, even with the deprecated options set", JSON.stringify(tags))
+      const [core = ""] = tags
 
       check(core.includes(`src="${SCRIPT_URL}"`), "core src is the tracker", core)
-      check(companion.includes(`src="${COMPANION_URL}"`), "companion src is the interactions script", companion)
-      check(tags.indexOf(core) < tags.indexOf(companion), "the core script comes FIRST")
+      check(!html.includes("script.interactions.js"), "no interactions script tag is emitted")
 
       // The byte-string assertion. ` defer ` or ` defer>` — bare, never
       // `defer="defer"` and never `defer="true"`.
       check(/\sdefer(\s|>)/.test(core), "core carries a BARE `defer` (not defer=\"defer\")", core)
-      check(/\sdefer(\s|>)/.test(companion), "companion carries a BARE `defer`", companion)
 
       check(core.includes(`data-domain="example.com"`), "core carries data-domain", core)
-      check(!companion.includes("data-domain"), "companion carries NO data-domain — it reads window.pulse", companion)
 
-      // 🔴 The inversion this whole module guards against. Unhead renders a
-      // `data-*` prop of `false` as data-x="false" — an attribute that is
-      // PRESENT — and the tracker reads these with hasAttribute(). A present
-      // `data-no-scroll` means scroll tracking is OFF.
-      check(
-        core.includes(`data-no-scroll=""`),
-        "trackScroll:false emits data-no-scroll=\"\" (present, empty)",
-        core,
-      )
-      check(
-        !/data-no-(outbound|downloads)/.test(core),
-        "outbound and downloads stay ON, so their flags are ABSENT — not =\"false\"",
-        core,
-      )
-      check(companion.includes(`data-no-copy=""`), "companion copy:false emits data-no-copy=\"\"", companion)
-      check(
-        !/data-no-(clicks|forms)/.test(companion),
-        "companion clicks and forms stay ON, so their flags are ABSENT",
-        companion,
-      )
+      // The deprecated options are ignored: the site's settings in Pulse
+      // decide, so no flag attribute of either family may be written.
+      check(!/data-no-/.test(core), "trackScroll:false and companion are ignored: no data-no-* attribute", core)
+      check(!/data-ignore-/.test(core), "no data-ignore-* attribute", core)
 
       // Joomla appended `?mediaVersion=…` to this exact URL. A query on a
       // third-party CDN asset is a cache miss on every site that installs us.
-      check(!/js\.ciphera\.net\/[^"']*\?/.test(html), "no cache-busting query on either CDN url")
+      check(!/js\.ciphera\.net\/[^"']*\?/.test(html), "no cache-busting query on the CDN url")
 
       check(!core.includes("data-api"), "no data-api when no proxy origin is configured", core)
     },
@@ -131,7 +111,7 @@ const FIXTURES = [
     config: `pulse: { apiUrl: "https://proxy.example.com/" }`,
     assert(html) {
       const tags = ourTags(html)
-      check(tags.length === 1, "one Pulse tag: no companion unless asked for", JSON.stringify(tags))
+      check(tags.length === 1, "one Pulse tag", JSON.stringify(tags))
       const [core = ""] = tags
       // An empty `data-domain=""` would be read by the tracker as a domain of
       // "", not as absence. Absent is the only correct rendering.
@@ -214,11 +194,11 @@ async function hydrationCheck(dir) {
     const tags = await page.$$eval('script[src*="js.ciphera.net"]', (els) =>
       els.map((e) => ({ src: e.src, defer: e.defer, async: e.async, domain: e.getAttribute("data-domain") })),
     )
-    check(tags.length === 2, "after hydration the DOM still holds exactly two tags", JSON.stringify(tags))
-    check(hits.length === 2, "exactly two requests to js.ciphera.net — no duplicate load", JSON.stringify(hits))
+    check(tags.length === 1, "after hydration the DOM still holds exactly one tag", JSON.stringify(tags))
+    check(hits.length === 1, "exactly one request to js.ciphera.net, so no duplicate load", JSON.stringify(hits))
     check(
       tags.every((t) => t.defer === true && t.async === false),
-      "both tags are deferred and ordered in the live DOM",
+      "the tag is deferred and ordered in the live DOM",
       JSON.stringify(tags),
     )
   } finally {
